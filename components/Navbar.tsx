@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
@@ -30,28 +30,52 @@ const DIRECTORY_LINKS: SubLink[] = [
 const UNDERLINE =
   "after:content-[''] after:absolute after:bottom-0 after:left-0 after:h-[3px] after:w-full after:scale-x-0 after:bg-light-pink after:transition-transform after:duration-200"
 
+// Active/inactive branches are shared by every desktop item so the colour and
+// underline treatment can never drift apart between two nav entries.
+const DESKTOP_ACTIVE = 'text-off-white after:scale-x-100'
+const DESKTOP_IDLE = 'text-white hover:text-off-white hover:after:scale-x-100'
+
+/** Plain text item: "Beranda", "Administrasi", "Berita". */
 const desktopLinkClass = (active: boolean) =>
   [
     'relative px-1 py-2 font-medium transition-colors duration-200',
     UNDERLINE,
-    active
-      ? 'text-off-white after:scale-x-100'
-      : 'text-white hover:text-off-white hover:after:scale-x-100',
+    active ? DESKTOP_ACTIVE : DESKTOP_IDLE,
   ].join(' ')
 
-const desktopMenuButtonClass = (active: boolean) =>
+/**
+ * Dropdown trigger (label + chevron), used by BOTH "Profil" and "Direktori".
+ *
+ * The `flex items-center gap-1` is load-bearing, not decoration: without it the
+ * inline <svg> falls back to baseline alignment (the chevron renders visibly
+ * lower than the text) and the spacing degenerates into a JSX whitespace text
+ * node of unpredictable width. `shrink-0` is likewise a no-op outside a flex
+ * container. Keeping one builder for both triggers makes that regression
+ * impossible to reintroduce on a single item.
+ */
+const desktopDropdownTriggerClass = (active: boolean) =>
   [
     'relative flex items-center gap-1 px-1 py-2 font-medium transition-colors duration-200',
     UNDERLINE,
-    active
-      ? 'text-off-white after:scale-x-100'
-      : 'text-white hover:text-off-white hover:after:scale-x-100',
+    active ? DESKTOP_ACTIVE : DESKTOP_IDLE,
   ].join(' ')
+
+/** Chevron inside a desktop dropdown trigger; rotates with the trigger. */
+const desktopChevronClass =
+  'shrink-0 transition-transform duration-200 group-hover:rotate-180'
 
 // `invisible` (a valid v4 name) replaces the invalid `visibility-hidden` class.
 // `group-focus-within` keeps the panel reachable by keyboard.
+const DROPDOWN_WRAPPER =
+  'invisible absolute left-0 top-full z-20 w-48 pt-2 opacity-0 transition-opacity duration-200 group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100'
+
+/**
+ * Inner card. `overflow-hidden` is required for the rounded corners, which is
+ * also why the hover bridge lives on the outer wrapper: a `::before` bridge
+ * placed on the card itself would be clipped away by that overflow.
+ */
 const DROPDOWN_PANEL =
-  'invisible absolute left-0 mt-0 w-48 overflow-hidden rounded-lg border-2 border-primary-magenta bg-white opacity-0 shadow-neo-lg transition-all duration-200 group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100'
+  'w-full overflow-hidden rounded-lg border-2 border-primary-magenta bg-white shadow-neo-lg'
 
 const DROPDOWN_ITEM =
   'flex min-h-[44px] items-center border-b border-gray-200 px-4 py-2 font-medium text-ipm-dark transition-colors duration-200 last:border-b-0 hover:bg-off-white hover:text-primary-magenta'
@@ -74,12 +98,108 @@ const drawerSubLinkClass = (active: boolean) =>
       ? 'border-l-light-pink bg-off-white/10 font-semibold text-off-white'
       : 'border-l-transparent text-white/90 hover:border-l-light-pink hover:bg-off-white/10 hover:text-white',
   ].join(' ')
+/** Chevron-only accordion toggle in the mobile drawer (both sections). */
+const drawerToggleClass =
+  'flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg text-white transition-colors duration-200 hover:bg-off-white/10'
+
+type DrawerSectionProps = {
+  /** DOM id suffix, e.g. "profile" -> drawer-profile-submenu. */
+  id: string
+  href: string
+  label: string
+  links: SubLink[]
+  active: boolean
+  open: boolean
+  onToggle: () => void
+  onNavigate: () => void
+  isActive: (href: string) => boolean
+}
+
+/**
+ * Mobile-drawer section with a sub-menu (Profil / Direktori).
+ *
+ * Extracted so the two sections are byte-identical in structure and styling.
+ * Previously "Direktori" drifted from "Profil": its label was a <button> that
+ * only toggled (so /directory was unreachable) and it carried a second,
+ * duplicate onClick/aria-expanded/aria-controls pair.
+ *
+ * The label is a <Link> that navigates to the section index and closes the
+ * drawer; the adjacent chevron is a separate toggle-only button. That keeps
+ * one tap per intent and avoids the ambiguous "button that navigates" and
+ * "button that toggles" mix-ups.
+ */
+function DrawerSection({
+  id,
+  href,
+  label,
+  links,
+  active,
+  open,
+  onToggle,
+  onNavigate,
+  isActive,
+}: DrawerSectionProps) {
+  return (
+    <div className="rounded-lg transition-colors duration-200">
+      <div className="flex items-stretch">
+        <Link
+          href={href}
+          onClick={onNavigate}
+          aria-current={active ? 'page' : undefined}
+          className={drawerLinkClass(active)}
+        >
+          {label}
+        </Link>
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={open}
+          aria-controls={`drawer-${id}-submenu`}
+          aria-label={
+            open ? `Sembunyikan submenu ${label}` : `Tampilkan submenu ${label}`
+          }
+          className={drawerToggleClass}
+        >
+          <ChevronDown
+            size={20}
+            className={`transition-transform duration-300 ${
+              open ? 'rotate-180 text-light-pink' : ''
+            }`}
+          />
+        </button>
+      </div>
+      {open && (
+        <div
+          id={`drawer-${id}-submenu`}
+          className="ml-3 mt-1 space-y-1 border-l-2 border-light-pink pl-3"
+        >
+          {links.map((link) => {
+            const linkActive = isActive(link.href)
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={onNavigate}
+                aria-current={linkActive ? 'page' : undefined}
+                className={drawerSubLinkClass(linkActive)}
+              >
+                {link.label}
+              </Link>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Navbar() {
   const pathname = usePathname()
   const router = useRouter()
 
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
 
   /** Active-route matching: exact for `/`, prefix for nested sections. */
   const isActive = useCallback(
@@ -90,35 +210,47 @@ export default function Navbar() {
     [pathname],
   )
 
-  /**
-   * Seed the accordions from the current route so the active section is
-   * already expanded on the first paint (and in the server-rendered HTML)
-   * rather than only after the effect below runs on the client.
+  /*
+   * Route flags are derived *before* the accordion state so both the initial
+   * render and the sync effect below read from a single source of truth.
    */
-  const [isProfileOpen, setIsProfileOpen] = useState(() =>
-    PROFILE_LINKS.some((link) => isActive(link.href)),
-  )
-  const [isDirectoryOpen, setIsDirectoryOpen] = useState(() =>
-    DIRECTORY_LINKS.some((link) => isActive(link.href)),
+  const homeActive = isActive('/')
+  const profileActive = isActive('/profile')
+  const directoryActive = isActive('/directory')
+  const administrationActive = isActive('/administration')
+  const newsActive = isActive('/news')
+
+  /**
+   * Seed the accordions from the *section* route (not from the sub-links) so
+   * the active section is already expanded on the first paint and in the
+   * server-rendered HTML. Seeding from the sub-links left the section index
+   * itself (`/profile`, `/directory`) highlighted as current while its
+   * sub-menu stayed closed.
+   */
+  const [isProfileOpen, setIsProfileOpen] = useState(() => profileActive)
+  const [isDirectoryOpen, setIsDirectoryOpen] = useState(
+    () => directoryActive,
   )
 
   const closeMenu = useCallback(() => setIsOpen(false), [])
 
-  // 1. Collapse the drawer and every accordion whenever the route changes
-  //    (covers link taps, browser back/forward and programmatic pushes).
+  /*
+   * Single route-sync effect. It replaces the previous pair of effects, where
+   * the first unconditionally forced both accordions shut on every route
+   * change (and on mount, undoing the lazy initialisers) while the second
+   * immediately re-opened one of them again.
+   *
+   * Now the drawer always closes on navigation, and each accordion simply
+   * tracks whether its own section owns the current route - so navigating
+   * *within* a section keeps it open, leaving the section closes it, and a
+   * deliberate manual collapse survives unrelated re-renders (this effect
+   * only re-runs when a route flag actually flips).
+   */
   useEffect(() => {
     setIsOpen(false)
-    setIsProfileOpen(false)
-    setIsDirectoryOpen(false)
-  }, [pathname])
-
-  // 2. Auto-expand the accordion that owns the current route so the active
-  //    sub-page is visible without an extra tap.
-  useEffect(() => {
-    if (PROFILE_LINKS.some((link) => isActive(link.href))) setIsProfileOpen(true)
-    if (DIRECTORY_LINKS.some((link) => isActive(link.href)))
-      setIsDirectoryOpen(true)
-  }, [isActive])
+    setIsProfileOpen(profileActive)
+    setIsDirectoryOpen(directoryActive)
+  }, [profileActive, directoryActive])
 
   // 3. Lock body scroll while the drawer is open so the page behind the
   //    overlay cannot scroll.
@@ -131,11 +263,14 @@ export default function Navbar() {
     }
   }, [isOpen])
 
-  // 4. Escape closes the drawer.
+  // 4. Escape closes the drawer and returns focus to the button that opened
+  //    it, so keyboard users are never dropped at the top of the document.
   useEffect(() => {
     if (!isOpen) return
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsOpen(false)
+      if (event.key !== 'Escape') return
+      setIsOpen(false)
+      menuButtonRef.current?.focus()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
@@ -147,12 +282,6 @@ export default function Navbar() {
     setIsOpen(false)
     router.push(`/news?search=${encodeURIComponent(query)}`)
   }
-
-  const homeActive = isActive('/')
-  const profileActive = isActive('/profile')
-  const directoryActive = isActive('/directory')
-  const administrationActive = isActive('/administration')
-  const newsActive = isActive('/news')
 
   return (
     <nav className="sticky top-0 z-50 border-b-2 border-dark-magenta bg-primary-magenta">
@@ -198,18 +327,25 @@ export default function Navbar() {
             <div className="group relative">
               <Link
                 href="/profile"
-                className={desktopLinkClass(profileActive)}
+                className={desktopDropdownTriggerClass(profileActive)}
                 aria-current={profileActive ? 'page' : undefined}
+                aria-haspopup="true"
               >
                 Profil
-                <ChevronDown size={18} className="shrink-0" />
+                <ChevronDown size={18} className={desktopChevronClass} />
               </Link>
-              <div className={DROPDOWN_PANEL}>
-                {PROFILE_LINKS.map((link) => (
-                  <Link key={link.href} href={link.href} className={DROPDOWN_ITEM}>
-                    {link.label}
-                  </Link>
-                ))}
+              <div className={DROPDOWN_WRAPPER}>
+                <div className={DROPDOWN_PANEL}>
+                  {PROFILE_LINKS.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={DROPDOWN_ITEM}
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -217,18 +353,25 @@ export default function Navbar() {
             <div className="group relative">
               <button
                 type="button"
-                className={desktopMenuButtonClass(directoryActive)}
+                className={desktopDropdownTriggerClass(directoryActive)}
                 aria-current={directoryActive ? 'page' : undefined}
+                aria-haspopup="true"
               >
                 Direktori
-                <ChevronDown size={18} className="shrink-0" />
+                <ChevronDown size={18} className={desktopChevronClass} />
               </button>
-              <div className={DROPDOWN_PANEL}>
-                {DIRECTORY_LINKS.map((link) => (
-                  <Link key={link.href} href={link.href} className={DROPDOWN_ITEM}>
-                    {link.label}
-                  </Link>
-                ))}
+              <div className={DROPDOWN_WRAPPER}>
+                <div className={DROPDOWN_PANEL}>
+                  {DIRECTORY_LINKS.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={DROPDOWN_ITEM}
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -273,6 +416,7 @@ export default function Navbar() {
 
           {/* Mobile Menu Button */}
           <button
+            ref={menuButtonRef}
             type="button"
             onClick={() => setIsOpen((open) => !open)}
             aria-label={isOpen ? 'Tutup menu navigasi' : 'Buka menu navigasi'}
@@ -339,122 +483,30 @@ export default function Navbar() {
               </Link>
 
               {/* Profile accordion */}
-              <div
-                className={`rounded-lg transition-colors duration-200 ${
-                  profileActive ? 'bg-off-white/10' : ''
-                }`}
-              >
-                <div className="flex items-stretch">
-                  <Link
-                    href="/profile"
-                    onClick={closeMenu}
-                    aria-current={profileActive ? 'page' : undefined}
-                    className={drawerLinkClass(profileActive)}
-                  >
-                    Profil
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => setIsProfileOpen((open) => !open)}
-                    aria-expanded={isProfileOpen}
-                    aria-controls="drawer-profile-submenu"
-                    aria-label={
-                      isProfileOpen
-                        ? 'Sembunyikan submenu Profil'
-                        : 'Tampilkan submenu Profil'
-                    }
-                    className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg text-white transition-colors duration-200 hover:bg-off-white/10"
-                  >
-                    <ChevronDown
-                      size={20}
-                      className={`transition-transform duration-300 ${
-                        isProfileOpen ? 'rotate-180 text-light-pink' : ''
-                      }`}
-                    />
-                  </button>
-                </div>
-                {isProfileOpen && (
-                  <div
-                    id="drawer-profile-submenu"
-                    className="ml-3 mt-1 space-y-1 border-l-2 border-light-pink pl-3"
-                  >
-                    {PROFILE_LINKS.map((link) => {
-                      const active = isActive(link.href)
-                      return (
-                        <Link
-                          key={link.href}
-                          href={link.href}
-                          onClick={closeMenu}
-                          aria-current={active ? 'page' : undefined}
-                          className={drawerSubLinkClass(active)}
-                        >
-                          {link.label}
-                        </Link>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
+              <DrawerSection
+                id="profile"
+                href="/profile"
+                label="Profil"
+                links={PROFILE_LINKS}
+                active={profileActive}
+                open={isProfileOpen}
+                onToggle={() => setIsProfileOpen((open) => !open)}
+                onNavigate={closeMenu}
+                isActive={isActive}
+              />
 
               {/* Directory accordion */}
-              <div
-                className={`rounded-lg transition-colors duration-200 ${
-                  directoryActive ? 'bg-off-white/10' : ''
-                }`}
-              >
-                <div className="flex items-stretch">
-                  <button
-                    type="button"
-                    onClick={() => setIsDirectoryOpen((open) => !open)}
-                    aria-expanded={isDirectoryOpen}
-                    aria-controls="drawer-directory-submenu"
-                    aria-current={directoryActive ? 'page' : undefined}
-                    className={drawerLinkClass(directoryActive)}
-                  >
-                    Direktori
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsDirectoryOpen((open) => !open)}
-                    aria-expanded={isDirectoryOpen}
-                    aria-controls="drawer-directory-submenu"
-                    aria-label={
-                      isDirectoryOpen
-                        ? 'Sembunyikan submenu Direktori'
-                        : 'Tampilkan submenu Direktori'
-                    }
-                    className="flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg text-white transition-colors duration-200 hover:bg-off-white/10"
-                  >
-                    <ChevronDown
-                      size={20}
-                      className={`transition-transform duration-300 ${
-                        isDirectoryOpen ? 'rotate-180 text-light-pink' : ''
-                      }`}
-                    />
-                  </button>
-                </div>
-                {isDirectoryOpen && (
-                  <div
-                    id="drawer-directory-submenu"
-                    className="ml-3 mt-1 space-y-1 border-l-2 border-light-pink pl-3"
-                  >
-                    {DIRECTORY_LINKS.map((link) => {
-                      const active = isActive(link.href)
-                      return (
-                        <Link
-                          key={link.href}
-                          href={link.href}
-                          onClick={closeMenu}
-                          aria-current={active ? 'page' : undefined}
-                          className={drawerSubLinkClass(active)}
-                        >
-                          {link.label}
-                        </Link>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
+              <DrawerSection
+                id="directory"
+                href="/directory"
+                label="Direktori"
+                links={DIRECTORY_LINKS}
+                active={directoryActive}
+                open={isDirectoryOpen}
+                onToggle={() => setIsDirectoryOpen((open) => !open)}
+                onNavigate={closeMenu}
+                isActive={isActive}
+              />
 
               <Link
                 href="/administration"
