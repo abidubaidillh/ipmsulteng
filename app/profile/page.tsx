@@ -9,7 +9,7 @@ export default function ProfilePage() {
       <section className="relative pt-24 pb-12 md:pb-16 overflow-hidden bg-[#18181B]">
         {/* Background Image with Blur */}
         <Image
-          src="/profile_bg.JPG"
+          src="/profile_bg.jpg"
           alt="Profile Background"
           fill
           priority

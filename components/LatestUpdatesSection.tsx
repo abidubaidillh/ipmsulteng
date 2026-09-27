@@ -20,7 +20,7 @@ export default function LatestUpdatesSection() {
       category: 'Agenda',
       categoryColor: 'bg-amber-100 text-amber-800 border border-amber-300',
       date: 'Agenda: 10 Okt 2026',
-      image: '/profil_img.JPG',
+      image: '/profil_img.jpg',
       excerpt: 'Workshop intensif 3 hari membahas kepemimpinan modern...',
     },
     {
@@ -47,7 +47,7 @@ export default function LatestUpdatesSection() {
       category: 'Agenda',
       categoryColor: 'bg-amber-100 text-amber-800 border border-amber-300',
       date: 'Agenda: 5 Okt 2026',
-      image: '/profil_img.JPG',
+      image: '/profil_img.jpg',
       excerpt: 'Program mentoring intensif untuk kader perempuan...',
     },
     {
