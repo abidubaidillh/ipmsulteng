@@ -1,13 +1,83 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   NEO-BRUTALIST MAGENTA DESIGN SYSTEM
+   --------------------------------------------------------------------------
+   Tailwind CSS v4 uses CSS-first configuration. The previous
+   `tailwind.config.ts` was silently ignored (v4 no longer auto-loads JS
+   config files without an `@config` directive), which left 32 utility
+   classes uncompiled across the app - including `bg-bright-magenta` on the
+   mobile drawer, `border-light-pink` and the `shadow-neo-*` family.
+
+   All design tokens now live in this `@theme` block. The JS config file is
+   kept only for editor/tooling reference and is NOT loaded by the build.
+   ========================================================================== */
+@theme {
+  /* ---- Brand palette ---- */
+  --color-primary-magenta: #cd0179;
+  --color-bright-magenta: #db0183;
+  --color-light-pink: #f1a4d9;
+  --color-dark-magenta: #b01171;
+  --color-medium-pink: #d362aa;
+  --color-muted-pink: #b05490;
+  --color-off-white: #fdf1fc;
+  --color-deep-purple: #7a2d61;
+  --color-ipm-yellow: #ffc700;
+  --color-ipm-dark: #0f172a;
+  --color-ipm-bg: #fdf1fc;
+  --color-slate-dark: #1a2332;
+  --color-white: #ffffff;
+  --color-transparent: transparent;
+
+  /* ---- Neutral ramp (project overrides) ---- */
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-900: #111827;
+
+  /* ---- Status ramp (project overrides) ---- */
+  --color-red-100: #fee2e2;
+  --color-red-300: #fca5a5;
+  --color-red-700: #b91c1c;
+  --color-yellow-100: #fef3c7;
+  --color-yellow-700: #b45309;
+
+  /* ---- Typography ----
+     `--font-jakarta` is injected by next/font on <html> (required: v4
+     preflight resolves font-family on the `html` element, so the variable
+     must be declared on an ancestor of it, not on <body>).
+     The fallback keeps this declaration valid before the font resolves. */
+  --font-sans: var(--font-jakarta, ui-sans-serif), system-ui, -apple-system,
+    "Segoe UI", roboto, "Helvetica Neue", arial, sans-serif;
+
+  /* ---- Neo-brutalist hard shadows ---- */
+  --shadow-neo-sm: 2px 2px 0 0 #0f172a;
+  --shadow-neo-md: 3px 3px 0 0 #0f172a;
+  --shadow-neo-lg: 4px 4px 0 0 #0f172a;
+  --shadow-neo-xl: 6px 6px 0 0 #0f172a;
+}
+
+/* --------------------------------------------------------------------------
+   `card-neo` - shared neo-brutalist card surface.
+   Referenced by DepartmentGrid / NewsSection but never defined in any
+   stylesheet, so those cards rendered with no border and no shadow.
+   -------------------------------------------------------------------------- */
+@utility card-neo {
+  border-width: 2px;
+  border-color: var(--color-deep-purple);
+  box-shadow: var(--shadow-neo-lg);
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
   }
 
   body {
-    background-color: #FDF1FC;
-    color: #7A2D61;
+    background-color: #fdf1fc;
+    color: #7a2d61;
   }
 }
 

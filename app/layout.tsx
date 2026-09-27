@@ -18,8 +18,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="id">
-      <body className={`${jakarta.variable} bg-[#FDF1FC]`}>
+    <html lang="id" className={jakarta.variable}>
+      <body className="font-sans bg-ipm-bg">
         <Navbar />
         <main>{children}</main>
         <Footer />

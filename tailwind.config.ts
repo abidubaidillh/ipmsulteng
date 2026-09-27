@@ -1,3 +1,21 @@
+/**
+ * ============================================================================
+ * DEPRECATED - NOT LOADED BY THE BUILD
+ * ----------------------------------------------------------------------------
+ * Tailwind CSS v4 no longer auto-loads JavaScript config files. Without an
+ * explicit `@config` directive in `app/globals.css` this file has NO effect
+ * on the build.
+ *
+ * Because it was silently ignored, 32 utility classes (including
+ * `bg-bright-magenta`, `border-light-pink` and the `shadow-neo-*` family)
+ * never compiled into the CSS bundle.
+ *
+ * The design tokens have been migrated to a CSS-first `@theme` block in
+ * `app/globals.css`. THIS FILE IS RETAINED FOR REFERENCE ONLY - do not add
+ * or change tokens here. Add them to the `@theme` block in
+ * `app/globals.css` instead.
+ * ============================================================================
+ */
 import type { Config } from 'tailwindcss'
 
 const config: Config = {
