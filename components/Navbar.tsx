@@ -75,10 +75,10 @@ const DROPDOWN_WRAPPER =
  * placed on the card itself would be clipped away by that overflow.
  */
 const DROPDOWN_PANEL =
-  'w-full overflow-hidden rounded-lg border-2 border-primary-magenta bg-white shadow-neo-lg'
+  'w-full rounded-md border-2 border-black bg-white p-1.5 shadow-[4px_4px_0px_0px_#000]'
 
 const DROPDOWN_ITEM =
-  'flex min-h-[44px] items-center border-b border-gray-200 px-4 py-2 font-medium text-ipm-dark transition-colors duration-200 last:border-b-0 hover:bg-off-white hover:text-primary-magenta'
+  'flex min-h-[44px] items-center rounded-md px-4 py-2.5 text-sm font-semibold text-gray-900 transition-colors duration-200 hover:bg-[#CD0179]/10 hover:text-[#CD0179]'
 
 // Mobile drawer links: 44px minimum touch target plus a persistent left bar,
 // so the active route is obvious on touch devices (hover styles are compiled
@@ -234,6 +234,17 @@ export default function Navbar() {
 
   const closeMenu = useCallback(() => setIsOpen(false), [])
 
+  const [isDropdownClosing, setIsDropdownClosing] = useState(false)
+
+  const handleDropdownItemClick = useCallback(() => {
+    setIsOpen(false)
+    setIsDropdownClosing(true)
+    setTimeout(() => setIsDropdownClosing(false), 200)
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur()
+    }
+  }, [])
+
   /*
    * Single route-sync effect. It replaces the previous pair of effects, where
    * the first unconditionally forced both accordions shut on every route
@@ -319,6 +330,7 @@ export default function Navbar() {
               href="/"
               className={desktopLinkClass(homeActive)}
               aria-current={homeActive ? 'page' : undefined}
+              onClick={handleDropdownItemClick}
             >
               Beranda
             </Link>
@@ -334,13 +346,14 @@ export default function Navbar() {
                 Profil
                 <ChevronDown size={18} className={desktopChevronClass} />
               </Link>
-              <div className={DROPDOWN_WRAPPER}>
+              <div className={`${DROPDOWN_WRAPPER} ${isDropdownClosing ? '!invisible !opacity-0' : ''}`}>
                 <div className={DROPDOWN_PANEL}>
                   {PROFILE_LINKS.map((link) => (
                     <Link
                       key={link.href}
                       href={link.href}
                       className={DROPDOWN_ITEM}
+                      onClick={handleDropdownItemClick}
                     >
                       {link.label}
                     </Link>
@@ -351,22 +364,23 @@ export default function Navbar() {
 
             {/* Directory Dropdown */}
             <div className="group relative">
-              <button
-                type="button"
+              <Link
+                href="/directory"
                 className={desktopDropdownTriggerClass(directoryActive)}
                 aria-current={directoryActive ? 'page' : undefined}
                 aria-haspopup="true"
               >
                 Direktori
                 <ChevronDown size={18} className={desktopChevronClass} />
-              </button>
-              <div className={DROPDOWN_WRAPPER}>
+              </Link>
+              <div className={`${DROPDOWN_WRAPPER} ${isDropdownClosing ? '!invisible !opacity-0' : ''}`}>
                 <div className={DROPDOWN_PANEL}>
                   {DIRECTORY_LINKS.map((link) => (
                     <Link
                       key={link.href}
                       href={link.href}
                       className={DROPDOWN_ITEM}
+                      onClick={handleDropdownItemClick}
                     >
                       {link.label}
                     </Link>
@@ -379,6 +393,7 @@ export default function Navbar() {
               href="/administration"
               className={desktopLinkClass(administrationActive)}
               aria-current={administrationActive ? 'page' : undefined}
+              onClick={handleDropdownItemClick}
             >
               Administrasi
             </Link>
@@ -386,6 +401,7 @@ export default function Navbar() {
               href="/news"
               className={desktopLinkClass(newsActive)}
               aria-current={newsActive ? 'page' : undefined}
+              onClick={handleDropdownItemClick}
             >
               Berita
             </Link>
