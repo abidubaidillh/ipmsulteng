@@ -24,6 +24,14 @@ export const metadata: Metadata = {
   title: 'PW IPM Sulawesi Tengah | Pimpinan Wilayah Ikatan Pelajar Muhammadiyah',
   description: 'PW IPM Sulawesi Tengah - Organisasi pelajar Muhammadiyah yang berkomitmen untuk kemajuan pendidikan dan kepemimpinan Islam di Sulawesi Tengah.',
   keywords: 'IPM, Ikatan Pelajar Muhammadiyah, Sulawesi Tengah, Pelajar, Organisasi',
+  icons: {
+    icon: [
+      { url: '/icon_logo_web.png' },
+      { url: '/icon_logo_web.png', type: 'image/png' },
+    ],
+    shortcut: ['/icon_logo_web.png'],
+    apple: ['/icon_logo_web.png'],
+  },
 }
 
 export default function RootLayout({

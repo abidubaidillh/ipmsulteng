@@ -75,10 +75,10 @@ const DROPDOWN_WRAPPER =
  * placed on the card itself would be clipped away by that overflow.
  */
 const DROPDOWN_PANEL =
-  'w-full rounded-md border-2 border-black bg-white p-1.5 shadow-[4px_4px_0px_0px_#000]'
+  'w-full rounded-md border-2 border-deep-purple bg-white p-1.5 shadow-neo-lg'
 
 const DROPDOWN_ITEM =
-  'flex min-h-[44px] items-center rounded-md px-4 py-2.5 text-sm font-semibold text-gray-900 transition-colors duration-200 hover:bg-[#CD0179]/10 hover:text-[#CD0179]'
+  'flex min-h-[44px] items-center rounded-md px-4 py-2.5 text-sm font-semibold text-ipm-dark transition-colors duration-200 hover:bg-primary-magenta/10 hover:text-primary-magenta'
 
 // Mobile drawer links: 44px minimum touch target plus a persistent left bar,
 // so the active route is obvious on touch devices (hover styles are compiled
@@ -87,20 +87,20 @@ const drawerLinkClass = (active: boolean) =>
   [
     'flex min-h-[44px] w-full items-center rounded-lg border-l-4 py-2 pl-3 pr-2 text-left font-medium transition-colors duration-200',
     active
-      ? 'border-l-light-pink bg-off-white/15 font-semibold text-off-white'
-      : 'border-l-transparent text-white hover:border-l-light-pink hover:bg-off-white/10',
+      ? 'border-l-light-pink bg-transparent font-semibold text-off-white'
+      : 'border-l-transparent text-white hover:border-l-light-pink hover:text-off-white',
   ].join(' ')
 
 const drawerSubLinkClass = (active: boolean) =>
   [
     'flex min-h-[44px] w-full items-center rounded-lg border-l-4 py-2 pl-3 pr-2 text-left text-sm font-medium transition-colors duration-200',
     active
-      ? 'border-l-light-pink bg-off-white/10 font-semibold text-off-white'
-      : 'border-l-transparent text-white/90 hover:border-l-light-pink hover:bg-off-white/10 hover:text-white',
+      ? 'border-l-light-pink bg-transparent font-semibold text-off-white'
+      : 'border-l-transparent text-white/90 hover:border-l-light-pink hover:text-white',
   ].join(' ')
 /** Chevron-only accordion toggle in the mobile drawer (both sections). */
 const drawerToggleClass =
-  'flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg text-white transition-colors duration-200 hover:bg-off-white/10'
+  'flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-lg text-white transition-colors duration-200 hover:text-light-pink'
 
 type DrawerSectionProps = {
   /** DOM id suffix, e.g. "profile" -> drawer-profile-submenu. */
@@ -257,8 +257,13 @@ export default function Navbar() {
    * deliberate manual collapse survives unrelated re-renders (this effect
    * only re-runs when a route flag actually flips).
    */
+  // Close mobile menu on ANY route change
   useEffect(() => {
     setIsOpen(false)
+  }, [pathname])
+
+  // Sync accordion state only when profile/directory route flags change
+  useEffect(() => {
     setIsProfileOpen(profileActive)
     setIsDirectoryOpen(directoryActive)
   }, [profileActive, directoryActive])
@@ -450,7 +455,7 @@ export default function Navbar() {
       <div
         id="mobile-nav-drawer"
         aria-hidden={!isOpen}
-        className={`fixed inset-0 z-50 md:hidden ${
+        className={`fixed inset-0 z-50 md:hidden transition-[visibility] duration-300 ${
           isOpen
             ? 'visible pointer-events-auto'
             : 'invisible pointer-events-none'

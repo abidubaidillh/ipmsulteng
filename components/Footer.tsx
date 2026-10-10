@@ -1,4 +1,4 @@
-import Link from 'next/link'
+﻿import Link from 'next/link'
 import Image from 'next/image'
 
 const QUICK_LINKS = [
@@ -39,7 +39,7 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-sm leading-relaxed text-off-white md:text-base">
-              Pimpinan Wilayah IPM Sulawesi Tengah 2024&ndash;2026.
+              Pimpinan Wilayah IPM Sulawesi Tengah 2026&ndash;2028.
             </p>
           </div>
 
